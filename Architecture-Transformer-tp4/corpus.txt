@@ -1,0 +1,57 @@
+Les réseaux de neurones et le traitement des séquences
+
+Un texte est une séquence. Les mots arrivent les uns après les autres, et le sens d'une phrase dépend de l'ordre dans lequel ils apparaissent. Pendant longtemps, les chercheurs ont donc construit des modèles qui lisent le texte comme nous le faisons : de gauche à droite, un mot après l'autre. Ces modèles s'appellent des réseaux de neurones récurrents.
+
+Un réseau récurrent possède une mémoire. À chaque instant, il reçoit un nouveau mot et l'état de sa mémoire à l'instant précédent. Il combine ces deux informations pour produire un nouvel état. Les mêmes paramètres sont utilisés à chaque instant : le réseau applique toujours la même règle, mais sur des entrées différentes. Cette idée est simple et élégante, car un seul petit réseau peut lire une phrase de n'importe quelle longueur.
+
+Pourtant, la mémoire d'un réseau récurrent est fragile. Lorsque la phrase est longue, les informations du début se diluent peu à peu. Pendant l'apprentissage, le gradient doit traverser tous les instants de la séquence, et il devient souvent très petit ou très grand. On parle alors de gradient qui disparaît ou qui explose. Le modèle oublie ce qu'il a lu au début de la phrase, et il apprend mal les relations entre des mots éloignés.
+
+Pour corriger ce défaut, les chercheurs ont inventé le LSTM, une mémoire à long et à court terme. Le LSTM ajoute une seconde mémoire, appelée état de cellule, et trois portes qui contrôlent la circulation de l'information. La porte d'oubli décide ce qu'il faut effacer. La porte d'entrée décide ce qu'il faut ajouter. La porte de sortie décide ce qu'il faut montrer à l'instant suivant. Grâce à ces portes, le LSTM peut conserver une information pendant de nombreux instants. Le GRU est une variante plus légère qui fusionne certaines portes.
+
+Le LSTM a dominé le traitement du langage pendant plusieurs années. Il a servi à la traduction automatique, à la reconnaissance de la parole et à la génération de texte. Mais il conserve une limite importante : il lit toujours la séquence pas à pas. Pour calculer l'état au dixième mot, il faut d'abord calculer les neuf états précédents. Les calculs ne peuvent pas être faits en parallèle, et l'entraînement sur de très grands corpus devient lent.
+
+L'attention
+
+En deux mille dix-sept, un article au titre provocateur affirme que l'attention suffit. Les auteurs proposent une architecture nouvelle, le Transformer, qui abandonne complètement la récurrence. Au lieu de lire les mots un par un, le Transformer regarde toute la phrase en même temps. Chaque mot peut directement se comparer à tous les autres mots, quelle que soit leur distance.
+
+Le mécanisme d'attention repose sur trois familles de vecteurs. Chaque mot produit une requête, une clé et une valeur. La requête exprime ce que le mot recherche. La clé exprime ce que le mot propose. La valeur contient l'information que le mot peut transmettre. Pour savoir à quel point un mot doit faire attention à un autre, on compare la requête du premier à la clé du second avec un produit scalaire. On divise ce score par la racine carrée de la dimension, puis on applique une fonction softmax pour obtenir des poids positifs dont la somme vaut un. La nouvelle représentation du mot est la somme des valeurs, pondérée par ces poids.
+
+Prenons la phrase suivante : le chat ne peut pas déplacer le sac parce qu'il est fatigué. Pour comprendre le mot il, le modèle doit savoir s'il désigne le chat ou le sac. Avec l'attention, le mot il peut regarder directement le mot chat et le mot sac, et apprendre que c'est le chat qui est fatigué. Si l'on remplace fatigué par lourd, l'attention se déplace vers le sac. Le sens est construit par le contexte.
+
+Une seule attention ne suffit pas toujours. Le Transformer utilise donc plusieurs têtes d'attention en parallèle. Chaque tête possède ses propres projections et peut se spécialiser dans un type de relation : une tête peut suivre la grammaire, une autre peut relier les pronoms à leurs noms, une autre peut repérer les mots proches. Les résultats des différentes têtes sont ensuite concaténés et projetés à nouveau.
+
+L'attention ne connaît pas l'ordre des mots. Si l'on mélange la phrase, chaque mot voit les mêmes voisins. Pour indiquer la position, on ajoute à chaque mot un vecteur de position. Ce vecteur peut être calculé avec des fonctions sinus et cosinus de différentes fréquences, ou bien appris pendant l'entraînement. Le modèle sait alors que le premier mot n'est pas le dernier.
+
+Le bloc Transformer
+
+Un bloc Transformer contient deux grandes parties. La première est l'attention multi-têtes. La seconde est un petit réseau de neurones appliqué à chaque position séparément, appelé réseau feed-forward. Ce réseau agrandit d'abord la dimension, applique une fonction d'activation, puis revient à la dimension de départ.
+
+Autour de ces deux parties, on ajoute des connexions résiduelles et des normalisations. Une connexion résiduelle additionne l'entrée d'une couche à sa sortie. Elle permet au gradient de circuler facilement à travers de nombreux blocs empilés. La normalisation de couche stabilise les valeurs et rend l'apprentissage plus régulier. En empilant plusieurs blocs, le modèle construit des représentations de plus en plus riches.
+
+Comme tous les mots sont traités en même temps, le Transformer profite pleinement des cartes graphiques. On peut l'entraîner sur des quantités énormes de texte. C'est cette capacité à passer à l'échelle qui explique son succès. En quelques années, le Transformer est devenu l'architecture de base du traitement du langage, puis de la vision, du son et des modèles multimodaux.
+
+Deux familles de modèles
+
+À partir du Transformer, deux grandes familles de modèles de langage sont apparues. La première famille utilise uniquement l'encodeur. Son représentant le plus connu est BERT. La seconde famille utilise uniquement le décodeur. Son représentant le plus connu est GPT.
+
+BERT lit la phrase dans les deux sens à la fois. Pendant son entraînement, on cache certains mots de la phrase, et le modèle doit les retrouver. Pour deviner le mot caché, il peut utiliser les mots situés à gauche et les mots situés à droite. Dans la phrase Rabat est la capitale du Maroc, si l'on cache le mot capitale, le modèle peut s'appuyer sur Rabat et sur Maroc pour le retrouver. BERT produit de très bonnes représentations des phrases. On l'utilise pour classer des textes, pour répondre à des questions ou pour rechercher des documents.
+
+GPT, au contraire, lit le texte dans un seul sens. Chaque position ne peut regarder que les positions précédentes. On applique pour cela un masque causal, qui interdit à un mot de voir le futur. Pendant l'entraînement, le modèle apprend à prédire le mot suivant à partir de tous les mots précédents. Les cibles sont simplement le texte décalé d'une position. Une fois entraîné, GPT génère du texte en boucle : il prédit un mot, l'ajoute à la fin, puis prédit le mot suivant. On appelle ce fonctionnement la génération autorégressive.
+
+La température contrôle le caractère aléatoire de la génération. Avant le softmax, on divise les scores par la température. Une température basse rend la distribution plus pointue : le modèle choisit presque toujours le mot le plus probable, et le texte devient prévisible et répétitif. Une température élevée aplatit la distribution : le modèle prend plus de risques, et le texte devient plus varié, mais aussi plus incohérent.
+
+Les grands modèles de langage
+
+En augmentant le nombre de paramètres, la taille des données et la puissance de calcul, les chercheurs ont obtenu des modèles de plus en plus capables. Un grand modèle de langage contient des milliards de paramètres et a lu une grande partie du texte disponible sur internet. Il peut résumer un document, traduire une phrase, écrire du code ou répondre à une question.
+
+Ces modèles ne sont pas parfaits. Ils peuvent inventer des faits, reproduire des biais présents dans leurs données ou se tromper dans un raisonnement. Pour les rendre plus utiles et plus sûrs, on les ajuste avec des exemples de conversations et avec les préférences de personnes humaines. On les relie aussi à des outils et à des documents externes, afin qu'ils puissent chercher une information au lieu de l'inventer.
+
+Aujourd'hui, l'intelligence artificielle générative est multimodale. Un même modèle peut lire un texte, regarder une image, écouter un son et produire une réponse. Les images sont découpées en petits carrés, et chaque carré est traité comme un mot. Le son est découpé en petites tranches de temps. Toutes ces informations deviennent des séquences de vecteurs, et le Transformer peut les relier entre elles grâce à l'attention.
+
+Un petit modèle pour comprendre
+
+Pour comprendre ces idées, il n'est pas nécessaire de construire un modèle géant. Un petit Transformer, entraîné sur quelques pages de texte, suffit à observer les mécanismes essentiels. On découpe le texte en caractères, on associe un numéro à chaque caractère, et on demande au modèle de prédire le caractère suivant. Au début, le modèle produit des lettres au hasard. Après quelques minutes d'entraînement, il apprend les espaces, les mots fréquents, puis des morceaux de phrases. Il ne comprend pas vraiment le texte, mais il imite sa forme. C'est déjà une petite leçon sur la manière dont les grands modèles apprennent : en prédisant, encore et encore, ce qui vient ensuite.
+
+De la même façon, un petit modèle de type BERT peut apprendre à retrouver des mots cachés dans des phrases simples. Le chat dort sur le canapé. Le chien mange dans la cuisine. L'étudiant lit un livre à la bibliothèque. À force de voir ces phrases avec des trous, le modèle découvre que certains mots vont ensemble, que le chat dort plus souvent qu'il ne conduit, et qu'on lit un livre plutôt qu'une fourchette. Le sens naît des régularités du langage.
+
+Il faut cependant garder un regard critique. Un modèle entraîné sur un petit corpus apprend surtout ce corpus. Il peut réciter des phrases entières qu'il a vues pendant l'entraînement, sans être capable de produire des idées nouvelles. Pour mesurer ce qu'il a vraiment appris, on garde toujours une partie des données de côté, et on l'évalue sur des exemples qu'il n'a jamais vus. C'est la même règle pour un réseau récurrent, pour un LSTM ou pour un Transformer : seule l'évaluation sur des données nouvelles dit si le modèle généralise.
